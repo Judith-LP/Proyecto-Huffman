@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte de Máquina · Compresión Huffman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  
+    :root {
+  --bg-a: #cfe0f5;
+  --bg-b: #a9c6ea;
+  --bg-c: #dde9f7;
+  --panel: #ffffff;
+  --panel-alt: #f4f7fb;
+  --border: #d3dfee;
+  --border-soft: #e1e9f4;
+  --text: #182334;
+  --text-dim: #5c6b80;
+  --amber: #e8920f;
+  --amber-deep: #b8690a;
+  --cyan: #0fa3a3;
+  --red: #d8324f;
+  --green: #1fa566;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 5%, #e8f1fb 0%, transparent 50%),
+    radial-gradient(circle at 88% 0%, #b7cdec 0%, transparent 55%),
+    radial-gradient(circle at 50% 100%, #9fc0e8 0%, transparent 60%),
+    linear-gradient(160deg, #cfe0f5 0%, #a7c4e8 45%, #c3dafb 100%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-body);
+  padding: 2.5rem 1.25rem 5rem;
+  min-height: 100vh;
+}
+
+  main { max-width: 920px; margin: 0 auto; }
+
+  /* ---------- HEADER ---------- */
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .5rem;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .14em;
+    color: var(--amber-deep);
+    text-transform: uppercase;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 700;
+    margin: .25rem 0 .4rem;
+    letter-spacing: -0.01em;
+    color: #14181f;
+  }
+  .subtitle { color: var(--text-dim); font-size: .95rem; max-width: 56ch; line-height: 1.5; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: .5rem;
+    font-family: var(--font-mono); font-size: .72rem; color: var(--green);
+    border: 1px solid var(--border); background: var(--panel);
+    padding: .4rem .75rem; border-radius: 100px; white-space: nowrap;
+    box-shadow: 0 2px 10px -4px rgba(20,30,50,.08);
+  }
+  .dot-pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 0 0 rgba(31,165,102,.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(31,165,102,.5); }
+    70% { box-shadow: 0 0 0 6px rgba(31,165,102,0); }
+    100% { box-shadow: 0 0 0 0 rgba(31,165,102,0); }
+  }
+
+  /* ---------- PANEL ---------- */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-top: 1.75rem;
+    box-shadow: 0 8px 30px -16px rgba(20,30,50,.12);
+  }
+  .panel-title {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin: 0 0 1.4rem;
+  }
+  .panel-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .grupo { margin-bottom: 1.6rem; }
+  .grupo:last-of-type { margin-bottom: 0; }
+  .grupo-label {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--cyan);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: .75rem;
+    display: block;
+  }
+
+  .grid-campos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 760px) {
+    .grid-campos { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .grid-campos { grid-template-columns: 1fr; }
+  }
+
+  .campo {
+    background: var(--panel-alt);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: .7rem .85rem .6rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .campo:focus-within { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(232,146,15,.12); }
+  .campo--error { border-color: var(--red); }
+
+  .campo-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .35rem;
+  }
+  .campo-head label {
+    font-size: .72rem;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .campo-meta {
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .unidad {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    background: #fff;
+  }
+  .led {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #c7cdd8;
+    box-shadow: 0 0 0 0 transparent;
+    transition: background .15s ease, box-shadow .15s ease;
+  }
+  .led--ok { background: var(--green); box-shadow: 0 0 6px rgba(31,165,102,.5); }
+  .led--error { background: var(--red); box-shadow: 0 0 6px rgba(216,50,79,.5); }
+
+  .campo input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .95rem;
+    padding: .15rem 0;
+  }
+  .campo input::placeholder { color: #aab1bf; }
+
+  .mensaje-error {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--red);
+    margin-top: .3rem;
+  }
+
+  .btn-submit {
+    margin-top: 1.75rem;
+    width: 100%;
+    background: linear-gradient(135deg, #ffc15c, var(--amber) 55%, var(--amber-deep));
+    color: #2a1700;
+    border: none;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: .85rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: .95rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+    box-shadow: 0 10px 24px -10px rgba(232,146,15,.55);
+  }
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 28px -10px rgba(232,146,15,.65); }
+  .btn-submit:active { transform: translateY(0); }
+
+  /* ---------- RESULTADOS ---------- */
+  #seccion-resultados { margin-top: 1.75rem; }
+  #seccion-resultados.hidden { display: none; }
+
+  .terminal {
+    background: linear-gradient(160deg, #161d2b, #0c0f17);
+    border: 1px solid #232b3b;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .terminal::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, transparent 1px, transparent 2px);
+    pointer-events: none;
+  }
+  .terminal-label {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: #8e98ab;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: .6rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .terminal-label .led { background: var(--cyan); box-shadow: 0 0 6px rgba(15,163,163,.7); }
+
+  #output-plano {
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: #e7ebf3;
+    white-space: pre-wrap;
+    margin: 0;
+    line-height: 1.6;
+  }
+  #output-codificado {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: #5be3e3;
+    letter-spacing: .04em;
+    word-break: break-all;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    background: var(--panel-alt);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .stat-card.highlight {
+    background: linear-gradient(160deg, #fff3df, #fff9ef);
+    border-color: var(--amber);
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+    display: block;
+  }
+  .stat-card.highlight .stat-label { color: var(--amber-deep); }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin-top: .3rem;
+    display: block;
+    color: #1c2230;
+  }
+  .stat-card.highlight .stat-value { color: var(--amber-deep); }
+
+  .formula {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--text-dim);
+    margin-top: 1rem;
+  }
+
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot-pulse { animation: none; }
+  }
+</style>
+
+</head>
+<body>
+
+<main>
+  <div class="header-top">
+    <div>
+      <span class="eyebrow">Monitoreo · Planta Industrial</span>
+      <h1>Reporte de Máquina</h1>
+    </div>
+    <div class="status-pill"><span class="dot-pulse"></span>SENSORES EN LÍNEA</div>
+  </div>
+  <p class="subtitle">Ingresa los parámetros leídos de la máquina. El sistema valida cada sensor en tiempo real y genera el reporte comprimido con el algoritmo de Huffman.</p>
+
+  <section class="panel">
+    <h2 class="panel-title">Parámetros del reporte</h2>
+
+    <form id="form-reporte">
+      <div class="grupo">
+        <span class="grupo-label">Identificación</span>
+        <div class="grid-campos">
+          <div class="campo">
+            <div class="campo-head">
+              <label for="ID_MAQUINA">ID Máquina</label>
+              <span class="led" data-led="ID_MAQUINA"></span>
+            </div>
+            <input type="text" id="ID_MAQUINA" name="ID_MAQUINA" placeholder="Ej: M101" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="AREA">Área</label>
+              <span class="led" data-led="AREA"></span>
+            </div>
+            <input type="text" id="AREA" name="AREA" placeholder="Ej: PRODUCCION" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="ESTADO">Estado</label>
+              <span class="led" data-led="ESTADO"></span>
+            </div>
+            <input type="text" id="ESTADO" name="ESTADO" placeholder="Ej: ACTIVO" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="grupo">
+        <span class="grupo-label">Lecturas de sensores</span>
+        <div class="grid-campos">
+          <div class="campo">
+            <div class="campo-head">
+              <label for="TEMPERATURA">Temperatura</label>
+              <div class="campo-meta"><span class="unidad">°C</span><span class="led" data-led="TEMPERATURA"></span></div>
+            </div>
+            <input type="number" id="TEMPERATURA" name="TEMPERATURA" placeholder="Ej: 84" min="0" step="any" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="PRESION">Presión</label>
+              <div class="campo-meta"><span class="unidad">PSI</span><span class="led" data-led="PRESION"></span></div>
+            </div>
+            <input type="number" id="PRESION" name="PRESION" placeholder="Ej: 122" min="0" step="any" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="HUMEDAD">Humedad</label>
+              <div class="campo-meta"><span class="unidad">%</span><span class="led" data-led="HUMEDAD"></span></div>
+            </div>
+            <input type="number" id="HUMEDAD" name="HUMEDAD" placeholder="Ej: 65" min="0" step="any" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="VOLTAJE">Voltaje</label>
+              <div class="campo-meta"><span class="unidad">V</span><span class="led" data-led="VOLTAJE"></span></div>
+            </div>
+            <input type="number" id="VOLTAJE" name="VOLTAJE" placeholder="Ej: 440" min="0" step="any" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="PRODUCCION">Producción</label>
+              <div class="campo-meta"><span class="unidad">u/h</span><span class="led" data-led="PRODUCCION"></span></div>
+            </div>
+            <input type="number" id="PRODUCCION" name="PRODUCCION" placeholder="Ej: 450" min="0" step="any" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="NIVEL_COMBUSTIBLE">Nivel Combustible</label>
+              <div class="campo-meta"><span class="unidad">%</span><span class="led" data-led="NIVEL_COMBUSTIBLE"></span></div>
+            </div>
+            <input type="number" id="NIVEL_COMBUSTIBLE" name="NIVEL_COMBUSTIBLE" placeholder="Ej: 80" min="0" step="any" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="HORAS_OPERACION">Horas Operación</label>
+              <div class="campo-meta"><span class="unidad">h</span><span class="led" data-led="HORAS_OPERACION"></span></div>
+            </div>
+            <input type="number" id="HORAS_OPERACION" name="HORAS_OPERACION" placeholder="Ej: 1245" min="0" step="any" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="grupo">
+        <span class="grupo-label">Estado operativo</span>
+        <div class="grid-campos">
+          <div class="campo">
+            <div class="campo-head">
+              <label for="ALARMA">Alarma</label>
+              <span class="led" data-led="ALARMA"></span>
+            </div>
+            <input type="text" id="ALARMA" name="ALARMA" placeholder="Ej: NO" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="ESTADO_MANTENIMIENTO">Estado Mantenimiento</label>
+              <span class="led" data-led="ESTADO_MANTENIMIENTO"></span>
+            </div>
+            <input type="text" id="ESTADO_MANTENIMIENTO" name="ESTADO_MANTENIMIENTO" placeholder="Ej: NORMAL" required>
+          </div>
+          <div class="campo">
+            <div class="campo-head">
+              <label for="PRIORIDAD">Prioridad</label>
+              <span class="led" data-led="PRIORIDAD"></span>
+            </div>
+            <input type="text" id="PRIORIDAD" name="PRIORIDAD" placeholder="Ej: MEDIA" required>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">Generar y comprimir reporte ▸</button>
+    </form>
+  </section>
+
+  <section id="seccion-resultados" class="hidden">
+    <div class="panel">
+      <div class="terminal">
+        <div class="terminal-label"><span class="led led--ok"></span>Reporte generado · texto plano</div>
+        <pre id="output-plano"></pre>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="terminal">
+        <div class="terminal-label"><span class="led led--ok"></span>Mensaje codificado · Huffman</div>
+        <p id="output-codificado"></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Resultados de compresión</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Bits sin Huffman (ASCII)</span>
+          <span id="bits-ascii" class="stat-value">0 bits</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Bits con Huffman</span>
+          <span id="bits-huffman" class="stat-value">0 bits</span>
+        </div>
+        <div class="stat-card highlight">
+          <span class="stat-label">Ahorro de bits</span>
+          <span id="porcentaje-ahorro" class="stat-value">0 %</span>
+        </div>
+      </div>
+      <p id="formula-calculo" class="formula"></p>
+    </div>
+  </section>
+</main>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
